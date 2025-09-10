@@ -14,6 +14,9 @@ These are essential for achieving the project goals:
 - **Fetch historical price data**  
   - Support analysis over time periods.
   - Needed for plotting trends and testing data storage.
+- **Charts and visualizations**  
+  - Plot price trends or comparisons.
+  - Useful for analysis, but optional.
 - **Store data locally in SQLite**  
   - Ensures persistence between sessions.
   - Practice database integration in Python.
@@ -29,9 +32,6 @@ Optional features that enhance user experience but are not essential:
 - **Sentiment analysis of crypto news**  
   - Analyze social media or news articles.
   - Adds complexity; can be added after core features.
-- **Charts and visualizations**  
-  - Plot price trends or comparisons.
-  - Useful for analysis, but optional.
 - **Notifications for price changes**  
   - Send alerts when prices cross thresholds.
   - Peripheral feature; not required for core goals.
