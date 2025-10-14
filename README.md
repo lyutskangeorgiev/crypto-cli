@@ -9,7 +9,7 @@ Built with Python, it allows users to query real-time prices, retrieve historica
 
 - Fetch real-time price for any supported cryptocurrency  
 - Retrieve historical OHLCV (Open, High, Low, Close, Volume) data  
-- Display trending cryptocurrencies  
+- Display trending news in the world of cryptocurrencies  
 - Save data locally in a SQLite database  
 
 ---
@@ -52,7 +52,7 @@ This project relies on:
   Retrieve historical OHLCV data for the past `n` days.
 
 - `trending`  
-  Display top trending cryptocurrencies.
+  Display trending news in the world of cryptocurrencies.
 
 ### Examples
 
