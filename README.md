@@ -1,98 +1,239 @@
 # Crypto CLI
 
-A command-line tool for fetching, storing, and analyzing cryptocurrency market data.  
-Built with Python, it allows users to query real-time prices, retrieve historical OHLCV data, and track trending coins.
+A small, reliable command-line tool to fetch cryptocurrency prices and historical data from CoinGecko (requests-only) and compute **CAGR** and **Max Drawdown**. Built for clarity, reproducibility, and a clean demo.
+
+> **Scope (this release):** `price` and `history` commands, tiny disk cache, API key via env var, analytics = CAGR & Max DD.
+> **Deferred:** DB persistence, file export, advanced analytics, RSS/news, Flask API.
 
 ---
 
 ## Features
 
-- Fetch real-time price for any supported cryptocurrency  
-- Retrieve historical OHLCV (Open, High, Low, Close, Volume) data  
-- Display trending news in the world of cryptocurrencies  
-- Save data locally in a SQLite database  
+* **Requests-only** HTTP client (timeouts, small retries, custom UA).
+* **Tiny disk cache** to reduce latency and soften rate limits.
+* **Two commands**:
+
+  * `price` — spot prices for one or more coins.
+  * `history` — historical series + **daily returns**, **CAGR**, **Max Drawdown**.
+* **Clean CLI UX**: helpful `--help`, tidy tables, actionable errors.
 
 ---
 
-## Prerequisites
+## Requirements
 
-- Python 3.10 or higher  
-- Internet connection for API requests  
+* Python **3.10+**
+* Internet connection
+* Dependencies: `typer`, `requests`, `pandas`, `pytest` (for tests)
 
 ---
 
-## Installation
-
-Clone the repository and set up a virtual environment:
+## Install
 
 ```bash
-git clone https://github.com/lyutskangeorgiev/crypto-cli.git
-cd crypto-cli
-python -m venv venv
-source venv/bin/activate   # On Windows: venv\Scripts\activate
+# clone your repo
+git clone https://github.com/<you>/<repo>.git
+cd <repo>
+
+# create & activate venv
+python -m venv .venv
+# macOS/Linux
+source .venv/bin/activate
+# Windows PowerShell
+# .\.venv\Scripts\Activate.ps1
+
+# install deps
 pip install -r requirements.txt
 ```
 
-## Data Sources & Dependencies
+---
 
-This project relies on:
+## API Key & Security
 
-- [CoinGecko API](https://www.coingecko.com/en/api) for real-time and historical cryptocurrency data
-- Python libraries: `pycoingecko`, `requests`, `BeautifulSoup`, `pandas`, `Typer`, `sqlite3`
-- Optional news scraping from sites like CoinDesk, Cointelegraph
+CoinGecko now expects a key for many public/pro endpoints.
 
-## Usage
+* **Set your key in an environment variable** (never hardcode):
 
-### Commands
+  * Env var name: **`CRYPTO_CLI_API_KEY`**
+* **Header usage** (handled inside the `api/` layer):
 
-- `price <coin>`  
-  Fetch current price, market cap, and 24h volume for a specific coin.
+  * Public/demo base `api.coingecko.com` → header **`x-cg-demo-api-key`**
+  * Pro base `pro-api.coingecko.com` → header **`x-cg-pro-api-key`**
+* **Do not** pass keys via CLI flags or query params.
+* Keys are **never logged or cached**; headers are excluded from cache keys.
 
-- `history <coin> --days <n>`  
-  Retrieve historical OHLCV data for the past `n` days.
+Optional helper files:
 
-- `trending`  
-  Display trending news in the world of cryptocurrencies.
+```
+# .gitignore (add)
+.env
+.env.local
+*.secrets.*
 
-### Examples
-
-```bash
-python cli.py price bitcoin
-python cli.py history ethereum --days 30
-python cli.py trending
+# .env.example (commit with placeholders only)
+CRYPTO_CLI_API_KEY=YOUR_KEY_HERE
 ```
 
-### Sample Output
+Set the key before running:
 
-**Price Example:**
+```bash
+# macOS/Linux
+export CRYPTO_CLI_API_KEY="your_real_key_here"
 
-Bitcoin (BTC): $63,250 | Market Cap: $1.2T | 24h Volume: $32B
-
-**Historical Data Example:**
-
-| Date       | Open    | High    | Low     | Close   | Volume |
-|------------|---------|---------|---------|---------|--------|
-| 2025-08-09 | 3,100.5 | 3,150.2 | 3,080.1 | 3,125.4 | 1.2B   |
-| 2025-08-10 | 3,125.4 | 3,180.0 | 3,110.0 | 3,172.5 | 1.3B   |
-
-**Trending Example:**
-
-1. Solana (SOL)
-2. Avalanche (AVAX)
-3. Polkadot (DOT)
+# Windows PowerShell
+$env:CRYPTO_CLI_API_KEY = "your_real_key_here"
+```
 
 ---
 
-## Data Storage
+## Quickstart
 
-All historical and fetched data is stored locally in a SQLite database (`crypto_data.db` by default).
+```bash
+# See help
+python -m crypto_cli.main --help
+
+# Get spot prices
+python -m crypto_cli.main price --coins btc,eth --vs usd
+
+# Get history + analytics (CAGR, Max DD)
+python -m crypto_cli.main history --coin btc --vs usd --start 2023-01-01 --end 2023-12-31
+```
 
 ---
 
-## Running Tests
+## Commands
 
-Make sure your virtual environment is activated, then run:
+### `price`
+
+Fetch spot prices for one or more coins in a given vs-currency.
+
+**Usage**
 
 ```bash
-pytest tests/
+python -m crypto_cli.main price --coins <csv_ids> --vs <currency> [--no-cache]
 ```
+
+**Examples**
+
+```bash
+python -m crypto_cli.main price --coins btc,eth --vs usd
+python -m crypto_cli.main price --coins sol --vs eur --no-cache
+```
+
+**Notes**
+
+* `--coins` uses official CoinGecko IDs (check their docs/UI for exact IDs).
+* `--no-cache` forces a fresh network call.
+
+---
+
+### `history`
+
+Fetch a historical series and print daily returns + a summary with **CAGR** and **Max Drawdown**.
+
+**Usage**
+
+```bash
+python -m crypto_cli.main history \
+  --coin <id> --vs <currency> \
+  --start YYYY-MM-DD --end YYYY-MM-DD \
+  [--no-cache]
+```
+
+**Example**
+
+```bash
+python -m crypto_cli.main history --coin btc --vs usd --start 2023-01-01 --end 2023-12-31
+```
+
+**Output**
+
+* **Summary**: period, trading-day count, **CAGR**, **Max Drawdown** (percentage and peak→trough dates)
+* **Tail table**: last rows with `date`, `close`, `daily_return`
+
+---
+
+## Analytics Definitions
+
+* **Daily Return**
+  ( r_t = \frac{\text{close}*t}{\text{close}*{t-1}} - 1 )
+  First value is NA (no prior day) and is not used in aggregates.
+
+* **CAGR (Compounded Annual Growth Rate)**
+  Using first close (S), last close (E), and calendar days (D):
+  ( \text{CAGR} = \left(\frac{E}{S}\right)^{\frac{365}{D}} - 1 )
+  Guards: if (S \le 0) or (D < 1), report **N/A**.
+
+* **Max Drawdown (percentage + dates)**
+  Track a running peak of `close`.
+  ( \text{DD}_t = \frac{\text{close}_t}{\text{peak_to_date}} - 1 \le 0 )
+  Max DD is the minimum DD over the period; report value and **peak→trough** dates.
+  Edge cases: monotonic rise → Max DD = 0.00%; flat series → CAGR = 0.00%, Max DD = 0.00%.
+
+---
+
+## Caching
+
+* Location: `~/.cache/crypto-cli/`
+* Cache key: `METHOD PATH?sorted(query_params)` (headers **not** included)
+* Format: JSON `{ fetched_at, status_code, payload }`
+* Default TTLs:
+
+  * `price`: ~60 seconds
+  * `history`: ~6 hours
+* Bypass cache with `--no-cache`.
+
+---
+
+## Project Layout
+
+```
+src/crypto_cli/
+  main.py                 # Typer commands: price, history
+  api/
+    __init__.py
+    fetch_market.py       # requests+cache for spot price (adds API key header if set)
+    fetch_history.py      # requests+cache for historical data (adds API key header if set)
+  data/
+    __init__.py
+    transform.py          # JSON → DataFrame normalization; UTC parsing; dtype enforcement
+    analytics.py          # daily returns, CAGR, Max Drawdown (pure)
+  utils/
+    __init__.py
+    cache.py              # disk cache: keying, TTL, get/put
+    parse.py              # input validation (coins/vs/dates)
+    format.py             # table/number/percent formatting; concise errors
+    db.py                 # present but NOT used in this release
+tests/
+  ...                     # analytics unit tests + CLI smokes
+```
+
+---
+
+## Troubleshooting
+
+* **Unauthorized / key required**
+  Ensure `CRYPTO_CLI_API_KEY` is set. Confirm base URL → header mapping (demo vs pro handled inside `api/*`).
+
+* **Too many requests / 429**
+  Let the cache do its job. Avoid rapid polling. Respect TTLs.
+
+* **Invalid coin id / vs**
+  Use official CoinGecko IDs and valid vs currencies (e.g., `usd`, `eur`). Check spelling/case.
+
+* **Bad date format**
+  Use `YYYY-MM-DD` and ensure `start <= end`.
+
+* **Empty output**
+  The date range may lack data; widen the range or choose another coin.
+
+---
+
+## Roadmap
+
+* **Persistence & Export:** SQLite upserts for OHLCV + returns; `--export csv|json`.
+* **Analytics+:** Annualized volatility, Sharpe (configurable RF), rolling metrics, correlation, SMA regimes.
+* **Trending (stable):** RSS ingestion (dedupe by URL hash).
+* **REST API:** Flask parity endpoints.
+* **HTTP enhancements:** honor `Retry-After`, circuit breaker, configurable base URL.
+* **CI & Quality:** GitHub Actions, `ruff`/`flake8`, pre-commit hooks.
+
