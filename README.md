@@ -76,42 +76,23 @@ Restart your shell afterward
 
 ## Usage
 
----
+### Fetch the price of one or more cryptocurrencies:
 
-## Project Structure:
+```bash
+python -m crypto_cli.main price --coins btc --vs usd
+```
 
----
+### Multiple coins:
 
-crypto-cli/
-│
-├── src/
-│   └── crypto_cli/
-│       ├── __init__.py
-│       ├── main.py              # Typer CLI entry point
-│       ├── db.py                # Top-level DB helpers (if used)
-│       │
-│       ├── api/                 # API boundary (external services)
-│       │   ├── __init__.py
-│       │   ├── fetch_history.py
-│       │   └── fetch_market.py
-│       │
-│       ├── data/                # Data shaping & analytics
-│       │   ├── __init__.py
-│       │   ├── analytics.py
-│       │   └── transform.py
-│       │
-│       └── utils/               # Shared utilities
-│           ├── __init__.py
-│           ├── _session.py      # HTTP session + retry config
-│           ├── cache.py         # Caching helpers (if/when used)
-│           ├── db.py            # DB utility functions
-│           ├── errors.py        # Custom exception types
-│           ├── format.py        # Generic formatting helpers
-│           ├── parse.py         # Parsing/validation helpers
-│           └── tables_format.py # Table/column formatting helpers
-│
-├── tests/                       # Test suite (unit/smoke tests)
-├── requirements.txt
+```bash
+python -m crypto_cli.main price --coins btc,eth,sol --vs usd
+```
+
+### Multiple vs-currencies:
+
+```bash
+python -m crypto_cli.main price --coins btc --vs usd,eur
+```
 
 ---
 
