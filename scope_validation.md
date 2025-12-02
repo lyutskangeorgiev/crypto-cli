@@ -6,7 +6,7 @@ The goal is to keep the project **focused**, **graded on the right features**, a
 
 ---
 
-## 1. Iteration Scope (What *Must* Exist)
+## 1. Iteration Scope
 
 ### 1.1 Core Features
 
@@ -126,11 +126,11 @@ Future epics may cover:
 
 ---
 
-## 3. Scope Validation Checklist (By Epic)
+## 3. Scope Validation Checklist
 
 Use this section as a **Go/No-Go checklist** before submission.
 
-### Epic 1 — Planning & Foundation
+### Planning & Foundation
 
 - [ ] `python -m crypto_cli.main --help` works from a **clean venv**.
 - [ ] `requirements.txt` installs at least: Typer, requests, pandas, pytest.
@@ -145,14 +145,14 @@ Use this section as a **Go/No-Go checklist** before submission.
   - [ ] Describes Typer CLI surface.
   - [ ] Explains API surface + future analytics/cache at a high level.
 
-### Epic 2 — CLI Scaffolding (Typer)
+### CLI Scaffolding (Typer)
 
 - [ ] `price --coins btc,eth --vs usd,eur` appears in `--help` with explanation.
 - [ ] `history --coin btc --vs usd --start YYYY-MM-DD --end YYYY-MM-DD` appears in `--help` (at least skeleton).
 - [ ] Shell completion instructions in README tested for at least one shell.
 - [ ] `--help` for root and subcommands is readable and consistent.
 
-### Epic 3 — HTTP Layer & API Key
+### HTTP Layer & API Key
 
 - [ ] Shared `requests.Session` configured with:
   - [ ] Timeouts.
@@ -163,7 +163,7 @@ Use this section as a **Go/No-Go checklist** before submission.
 - [ ] Correct header name used depending on endpoint type (demo vs pro).
 - [ ] Logs and cache entries never contain the API key.
 
-### Epic 4 — Caching Layer
+### Caching Layer
 
 - [ ] Cache directory: `~/.cache/crypto-cli/` (or XDG-compliant equivalent).
 - [ ] Cache entries include `fetched_at`, `status_code`, `payload`.
@@ -173,7 +173,7 @@ Use this section as a **Go/No-Go checklist** before submission.
 - [ ] `--no-cache` flag skips cache and forces a network call.
 - [ ] Warm `price` calls are noticeably faster than cold ones.
 
-### Epic 5 — Price Command
+### Price Command
 
 - [ ] Uses session + cache to call `/api/v3/simple/price`.
 - [ ] Defensively parses JSON; missing keys → readable error.
@@ -183,7 +183,7 @@ Use this section as a **Go/No-Go checklist** before submission.
   - [ ] Consistent columns, aligned.
 - [ ] On invalid input (e.g., unknown coin), command exits with **non-zero** status.
 
-### Epic 6 — History Command (Data + Analytics)
+### History Command (Data + Analytics)
 
 - [ ] `--start`/`--end` validated:
   - [ ] `YYYY-MM-DD` format.
@@ -204,7 +204,7 @@ Use this section as a **Go/No-Go checklist** before submission.
   - [ ] Tail table of recent rows.
 - [ ] Edge cases (flat/monotonic prices) behave sensibly.
 
-### Epic 7 — UX & Error Handling
+### UX & Error Handling
 
 - [ ] Formatting helpers for:
   - [ ] Thousands separators.
@@ -215,7 +215,7 @@ Use this section as a **Go/No-Go checklist** before submission.
   - [ ] Short, actionable, and consistent.
 - [ ] No raw tracebacks in normal error scenarios.
 
-### Epic 8 — Testing & Fixtures
+### Testing & Fixtures
 
 - [ ] Analytics tests:
   - [ ] Daily returns for up/down/flat.
@@ -232,7 +232,7 @@ Use this section as a **Go/No-Go checklist** before submission.
   - [ ] Headers do not affect cache key.
 - [ ] Tests pass locally; no live network required.
 
-### Epic 9 — Documentation & Demo
+### Documentation & Demo
 
 - [ ] `README.md`:
   - [ ] Features: `price` + staged `history`/analytics only (no overclaim).
@@ -251,7 +251,7 @@ Use this section as a **Go/No-Go checklist** before submission.
 
 ---
 
-## 4. Project-Level Definition of Done (Final Check)
+## 4. Project-Level Definition of Done
 
 The project is **in scope and done for this iteration** if:
 
