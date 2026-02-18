@@ -79,19 +79,19 @@ Restart your shell afterward
 ### Fetch the price of one or more cryptocurrencies:
 
 ```bash
-python -m crypto_cli.main price --coins btc --vs usd
+python -m crypto_cli.main price --coins bitcoin --vs usd
 ```
 
 ### Multiple coins:
 
 ```bash
-python -m crypto_cli.main price --coins btc,eth,sol --vs usd
+python -m crypto_cli.main price --coins bitcoin,ethereum,solana --vs usd
 ```
 
 ### Multiple vs-currencies:
 
 ```bash
-python -m crypto_cli.main price --coins btc --vs usd,eur
+python -m crypto_cli.main price --coins bitcoin --vs usd,eur
 ```
 
 ---
