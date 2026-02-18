@@ -26,7 +26,7 @@ At the moment, the tool provides a **single core command**: `price`.
 - Works from a clean virtual environment with `requirements.txt`  
 
 ### ✅ `price` command
-- Multiple coins via `--coins` (e.g. `btc,eth,sol`)  
+- Multiple coins via `--coins` (e.g. `bitcoin,ethereum,solana`)  
 - Multiple vs-currencies via `--vs` (e.g. `usd,eur`)  
 - Validation of input symbols  
 - Non-zero exit codes and readable error messages on invalid input / HTTP issues  
