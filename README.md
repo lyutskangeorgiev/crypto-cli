@@ -1,4 +1,4 @@
-# 🚀 crypto-cli
+# crypto-cli
 _A small, Typer-based CLI for crypto price data_
 
 ---
@@ -13,36 +13,45 @@ It focuses on:
 - Safe HTTP handling (timeouts, retries, friendly errors)
 - Readable, table-style output
 
-At the moment, the tool provides a **single core command**: `price`.
+At the moment, the tool provides a **single core command**: `price`. 
+*(Note: A `history` command featuring daily returns and analytics is currently planned and staged for the next iteration).*
 
 ---
 
 ## Features
 
-### ✅ CLI & project foundation
-- Typer-based command structure  
-- Helpful `--help` output with usage and options  
-- Clean package layout (`crypto_cli` as a module)  
-- Works from a clean virtual environment with `requirements.txt`  
+### CLI & Project Foundation
+- Typer-based command structure.
+- Helpful `--help` output with usage and options.
+- Clean package layout (`crypto_cli` as a module).
+- Works from a clean virtual environment with `requirements.txt`.
 
-### ✅ `price` command
-- Multiple coins via `--coins` (e.g. `bitcoin,ethereum,solana`)  
-- Multiple vs-currencies via `--vs` (e.g. `usd,eur`)  
-- Validation of input symbols  
-- Non-zero exit codes and readable error messages on invalid input / HTTP issues  
+### `price` Command
+- Fetch prices for one or multiple coins via `--coins` (e.g., `bitcoin,ethereum,solana`).
+- Support for multiple vs-currencies via `--vs` (e.g., `usd,eur`).
+- Optional data columns: add Market Cap (`--mcap`), 24h Volume (`--vol`), 24h Change (`--change`), and Last Updated Timestamp (`--updated`).
+- Strict validation of input symbols.
+- Non-zero exit codes and readable error messages on invalid input / HTTP issues.
 
-### ✅ HTTP client
-- Configured timeout  
-- Small retry policy  
-- Custom User-Agent header  
-- No raw stack traces shown to the user  
+### HTTP Client
+- Configured connection and read timeouts.
+- Small retry policy for `429` (Rate Limit) and `5xx` (Server) errors.
+- Custom `User-Agent` header.
+- Friendly error handling (no raw stack traces shown to the user).
 
-### ✅ Output formatting
-- Aligned table-like output  
-- Consistent decimal formatting (2–4 decimals)  
-- Market cap / 24h volume columns when available from the API  
+### Planned Features (Near-Term)
+- **`history` Command**: Fetch historical OHLCV data.
+- **Analytics**: Calculate Compounded Annual Growth Rate (CAGR) and Max Drawdown.
+- **Caching**: Local disk caching for faster repeated lookups.
 
 ---
+
+## Configuration & API Key
+
+This tool interacts with the CoinGecko API. To authenticate and avoid severe rate limits, configure your demo API key using the following environment variable:
+
+```bash
+export COINGECKO_API_KEY="your_api_key_here"
 
 ## Installation
 
