@@ -56,7 +56,7 @@ export COINGECKO_API_KEY="your_api_key_here"
 ## Installation
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/lyutskangeorgiev/crypto-cli.git
 cd crypto-cli
 
 python -m venv .venv
