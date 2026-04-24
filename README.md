@@ -17,7 +17,7 @@ At the moment, the tool provides a **single core command**: `price`.
 
 ---
 
-## Features (current)
+## Features
 
 ### ✅ CLI & project foundation
 - Typer-based command structure  
@@ -93,45 +93,3 @@ python -m crypto_cli.main price --coins bitcoin,ethereum,solana --vs usd
 ```bash
 python -m crypto_cli.main price --coins bitcoin --vs usd,eur
 ```
-
----
-
-## Current Features
-
-- **Typer CLI** with helpful `--help` output  
-- **price** command with multi-coin and multi-vs support  
-- Input validation and human-friendly error messages  
-- Timeout + retry HTTP configuration  
-- Custom User-Agent header  
-- Table-style output with:
-  - aligned columns  
-  - fixed decimals  
-  - market cap and volume when available  
-
----
-
-## Future Features (planned)
-
-These features are planned for upcoming versions:
-
-### Historical data
--Fetch OHLCV data for a selected date range and print a normalized table.
-
-### Daily return calculations
--Compute day-to-day percentage changes for closing prices.
-
-### Analytics
--Add statistical measures such as CAGR and maximum drawdown.
-
-### Summary blocks
--Show a concise overview for historical data (period, trading days, metrics).
-
-### SQLite storage
--Store fetched prices and historical data locally.
-
-### Flask REST API
--Optional API layer to expose price and history endpoints.
-
-### Testing suite
--Basic CLI and analytics tests to ensure correctness.
-
