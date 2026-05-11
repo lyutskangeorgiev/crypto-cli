@@ -1,0 +1,39 @@
+# 1. Python Compilation Files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 2. Virtual Environments
+.venv/
+venv/
+env/
+
+# 3. Packaging & Build Artifacts (Visible in your tree!)
+src/*.egg-info/
+build/
+dist/
+*.egg
+
+# 4. Testing, Linting & Coverage Caches
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# 5. IDE & Editor Folders
+.idea/
+.vscode/
+
+# 6. Secrets and Environment Variables
+.env
+.env.local
+.secrets/
+
+# 7. OS Generated Files
+Thumbs.db
+.DS_Store
+
+# 8. Local Databases (From your DESIGN.md future plans)
+*.sqlite3
+*.db
