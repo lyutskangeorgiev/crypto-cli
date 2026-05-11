@@ -6,6 +6,12 @@ class Category(Enum):
     SERVER = "server"
     OTHER = "other"
 
+class ApiError(RuntimeError):
+    def __init__(self, message: str, *, category: Category = Category.OTHER, debug: dict | None = None):
+        super().__init__(message)
+        self.category = category
+        self.debug = debug or {}
+
 def classify_http(status: int | None) -> Category:
     if status in (400, 404, 422):
         return Category.INPUT

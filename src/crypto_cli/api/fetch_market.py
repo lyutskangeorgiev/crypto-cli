@@ -28,17 +28,17 @@ def get_simple_price(api_base, connect_timeout,
         raise RuntimeError("Reading timed out(slow server or large response)") from e
     except requests.exceptions.ConnectionError as e:
         raise RuntimeError("Connection error (DNS/TLS/socket)") from e
-    except requests.exceptions.HTTPError as e:
+    #except requests.exceptions.HTTPError as e:
         status = e.response.status_code
         if status == 400:
             raise RuntimeError("Bad request (check params)") from e
-        if status == 401 or status == 403:
+        elif status == 401 or status == 403:
             raise RuntimeError("Auth/plan error: check CoinGecko Pro API key/plan") from e
-        if status == 404:
-            raise RuntimeError("Unknown coind ID or endpoint path") from e
-        if status == 429:
+        elif status == 404:
+            raise RuntimeError("Unknown coin ID or endpoint path") from e
+        elif status == 429:
             raise RuntimeError("Too many requests for the API rate limit (check network)") from e
-        if 500 <= status <= 599:
+        elif 500 <= status <= 599:
             raise RuntimeError("Server error at CoinGecko, try again later") from e
     try:
         return resp.json()

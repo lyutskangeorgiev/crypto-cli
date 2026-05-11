@@ -2,17 +2,14 @@
 #installed typer-completion for auto-completion of commands!
 import typer
 import requests
-
 from dataclasses import dataclass, field
-
-from click import BadParameter
-
 from crypto_cli.utils._session import build_session
-from crypto_cli.utils.http_errors import classify_http, Category
-from crypto_cli.utils.parse import parse_csv_ids, parse_csv_vs
+from crypto_cli.utils.errors import classify_http, Category
+from crypto_cli.utils.parse import parse_csv_ids, parse_csv_vs, normalize_price
 from crypto_cli.api.fetch_market import get_simple_price
-app = typer.Typer(help= "Crypto Data CLI")
+from crypto_cli.utils.tables_format import format_table
 
+app = typer.Typer(help= "Crypto Data CLI")
 @dataclass
 class Config: #for config of settings for the whole app
     api_base: str
@@ -69,8 +66,7 @@ def _dbg_suffix(debug: dict | None) -> str:
         parts.append(f"resp='{excerpt}'")
 
     if parts:
-        return " " + " ".join(parts) #leading with space beacause
-        # we attatch that to the error msg
+        return " " + " ".join(parts) #leading with space beacause we attatch that to the error msg
     else:
         return ""
 
@@ -97,8 +93,9 @@ def price(
     except ValueError as e:
         raise typer.BadParameter(str(e), param_hint="--vs")
     #call fetch_market.py, passing cfg and flags (api)
+    data = None
     try:
-        data,debug = get_simple_price(
+        data = get_simple_price(
             api_base=cfg.api_base,
             connect_timeout=cfg.connect_timeout,
             read_timeout=cfg.read_timeout,
@@ -110,6 +107,8 @@ def price(
             include_last_updated=updated,
             session=ses
         )
+        rows = normalize_price(data, coin_ids, vs_list, mcap, vol, change, updated)
+
     except requests.exceptions.HTTPError as e:
         msg = None
         if getattr(e, "response", None):
@@ -120,35 +119,39 @@ def price(
         if catg is Category.INPUT:
             if len(coin_ids) == 1 and status == 404:
                 msg = f"unknown coin id {coin_ids[0]!r}"
-                BadParameter(msg)
+                raise typer.BadParameter(msg, param_hint="--coins")
             else:
                 msg = "input error. check coin ids and vs currencies"
-                BadParameter(msg)
+            raise typer.BadParameter(msg, param_hint="--coins/--vs")
 
         elif catg is Category.RATE:
             msg = "rate limit. try again later"
-            typer.echo(msg, err=True)
-            raise typer.Exit(1)
 
         elif catg is Category.SERVER:
             msg = "service unavailable. try again later"
-            typer.echo(msg, err=True)
-            raise typer.Exit(1)
 
         elif catg is Category.OTHER:
             if status is not None:
                 msg = f"http error ({status})"
             else:
                 msg = "http error"
-            typer.echo(msg, err=True)
-            raise typer.Exit(1)
 
-        if cfg.verbose:
+        debug = None
+        if cfg.verbose and getattr(e, "response", None):
+            resp = e.response
+            debug = {
+                "request_id": resp.headers.get("X-Request-Id"),
+                "elapsed_ms": resp.elapsed.total_seconds() * 1000,
+                "resp_excerpt": resp.text
+            }
             msg += _dbg_suffix(debug)
         typer.echo(msg, err=True)
         raise typer.Exit(1)
 
 # pretty print result
+
+    table = format_table(rows)
+    print(table)
 
 @app.command()
 def history():
@@ -157,13 +160,6 @@ def history():
     """
     print("history")
 
-@app.command()
-def trending():
-    """
-    Get trending news from the cryptocurrency world.
-    (Will be implemented in other iteration of this project.)
-    """
-    print("trending")
 
 if __name__ == "__main__":
     app()

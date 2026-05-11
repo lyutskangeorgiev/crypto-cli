@@ -2,7 +2,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
-def build_session(config) -> "requests.Session":
+def build_session(config) -> requests.Session:
     s = requests.Session()
 
     headers = {"x-cg-demo-api-key": config.api_key,
@@ -22,7 +22,7 @@ def build_session(config) -> "requests.Session":
                   )
     adapter = HTTPAdapter(max_retries=retry)
     # MOUNTING (important):
-    #This scopes our retry policy to the CoinGecko host only.
-    #(Longest-prefix wins: this beats the generic "https://" adapter.)
+    #This scopes our retry policy to the CoinGecko host only
+    #(Longest-prefix wins: this beats the generic "https://" adapter)
     s.mount("https://api.coingecko.com/", adapter)
     return s
