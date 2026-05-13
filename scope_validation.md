@@ -1,8 +1,8 @@
-# Scope & Validation — Crypto CLI (Requests-Only, Cache-First)
+# Scope & Validation — Crypto CLI (Requests-Only, Real-Time API)
 
 This document locks down **what is in scope** for the current iteration of the Crypto CLI project and provides a **checklist to validate** that the implementation matches the agreed scope.
 
-The goal is to keep the project **focused**, **graded on the right features**, and **aligned with the README/DESIGN**.
+The goal is to keep the project **focused**, graded on the finished features, and aligned with the `README.md` and `DESIGN.md`.
 
 ---
 
@@ -12,117 +12,48 @@ The goal is to keep the project **focused**, **graded on the right features**, a
 
 - **CLI**
   - `price` command (current prices; production-ready).
-  - `history` command (single-coin OHLCV + analytics: returns, CAGR, max drawdown).
-  - Typer-based CLI (`python -m crypto_cli.main`) with `--help` and shell autocompletion.
+  - Typer-based CLI (`python -m crypto_cli.main`) with global configuration context (`ctx.obj`).
+  - Command stubs for `history` and `trending` (logic deferred to next iteration).
 
 - **HTTP Layer (Requests-only)**
-  - Shared `requests.Session` with:
-    - Timeouts
-    - Small retry policy on `429` / `5xx`
-    - Custom `User-Agent`
-  - Error mapping to short, friendly messages (no raw tracebacks).
+  - Shared `requests.Session` utilizing connection pooling.
+  - Resilience features using `urllib3.Retry`:
+    - Timeouts (Connect/Read).
+    - Exponential backoff policy for `429` (Rate Limits) and `5xx` (Server Errors).
+    - Custom `User-Agent`.
+  - Defensive JSON parsing to catch corrupted payloads or HTML maintenance pages.
+  - Error mapping to short, friendly terminal messages (no raw tracebacks).
 
 - **API Key Handling**
-  - `CRYPTO_CLI_API_KEY` read from environment in API layer only.
-  - Correct CoinGecko header usage:
-    - Demo: `x-cg-demo-api-key`
-    - Pro:  `x-cg-pro-api-key`
-  - API key is **never logged, printed, or included in cache keys/payloads**.
+  - `COINGECKO_API_KEY` read from environment in the main CLI layer.
+  - Correct CoinGecko header usage (`x-cg-demo-api-key`).
+  - API key is **never logged or printed** to the terminal.
 
-- **Caching**
-  - Disk cache under `~/.cache/crypto-cli/` (XDG-friendly).
-  - Cache entries: `{fetched_at, status_code, payload}`.
-  - Cache key: `METHOD PATH?sorted(query_params)` (no headers, no secrets).
-  - TTLs:
-    - `price`: ~60 seconds
-    - `history`: hours
-  - `--no-cache` to bypass cache and force fresh network fetch.
-
-- **Data & Analytics**
-  - `price`:
-    - Calls `/api/v3/simple/price?ids={ids}&vs_currencies={vs}`.
-    - Normalized rows: `{coin, vs, price[, mcap?, volume?]}`.
-    - Printed as aligned table (2–4 decimals, consistent columns).
-  - `history`:
-    - Calls `/coins/{id}/market_chart?vs_currency={vs}&from={unix}&to={unix}`.
-    - Validation for `--start/--end` (YYYY-MM-DD, `start <= end`).
-    - Normalized DataFrame:
-      - `date` (UTC, ascending), `open`, `high`, `low`, `close`, `volume`.
-    - `daily_return`: `close_t / close_{t-1} - 1` (first = `NaN`).
-    - Analytics:
-      - **CAGR**: `(E / S)^(365 / D) - 1`, with guards:
-        - `S <= 0` or `D < 1` → return `N/A`.
-      - **Max Drawdown**:
-        - Running peak; report worst % drawdown and peak→trough dates.
-    - Summary block:
-      - Period
-      - Trading-day count
-      - CAGR
-      - Max Drawdown (+ dates)
-      - Tail table of recent rows
+- **Data Validation & Formatting**
+  - **Regex Input Validation**: Coin IDs and vs-currencies are strictly validated against regex patterns and deduplicated.
+  - **Query Limits**: Hard limit of maximum 10 coins/currencies per request to protect API bounds.
+  - **Dynamic Formatting**: Prices are dynamically formatted (e.g., standard 2-decimals for assets >$1.00; up to 15-point precision for micro-caps <$1.00 with trailing zeros stripped).
 
 - **UX & Errors**
-  - Formatting helpers for:
-    - Thousands separators
-    - Percentages
-    - Aligned tables
-  - Command-prefixed errors (e.g. `price: unknown coin`, `history: invalid date`).
+  - User-friendly error categorization (`Category` enum: INPUT, RATE, SERVER, OTHER).
+  - Command-prefixed errors.
   - No unhandled tracebacks in normal usage.
 
-- **Testing**
-  - Analytics unit tests:
-    - Daily returns: up/down/flat toy series.
-    - CAGR: monotonic up/down + guard cases.
-    - Max Drawdown: flat, mid-range trough, last-day ATH.
-  - CLI “smoke” tests:
-    - `price` happy path + invalid coin / invalid vs.
-    - `history` invalid date + minimal happy path (fixture-based).
-  - HTTP mocks:
-    - Retry/backoff on `429` / `5xx`.
-    - Cache hit vs `--no-cache` miss.
-    - Headers *not* part of cache key.
-  - Tests pass locally; unit tests do not depend on live network.
-
 - **Docs & Demo**
-  - `README.md`:
-    - Describes features in-scope: `price` + staged `history`/analytics.
-    - Usage examples and autocompletion setup.
-    - API key section: env var, header mapping, no logging/caching.
-  - `DESIGN.md`:
-    - Module map consistent with actual code layout:
-      - `api/fetch_market.py`
-      - `api/fetch_history.py`
-      - `utils/_session.py`
-      - `utils/cache.py`
-      - `utils/format.py`, `utils/tables_format.py`
-      - `data/transform.py`, `data/analytics.py`
-    - Emphasizes requests-only HTTP, caching, analytics.
-    - Explicitly excludes web scraping.
-  - Demo (2–3 min):
-    - `price` → `history` flow.
-    - Shows at least one graceful error (e.g. bad coin).
-    - API key configured off-camera.
-    - Reproducible on a fresh venv.
+  - `README.md` accurately describes the `price` command and defers `history`/caching.
+  - `DESIGN.md` reflects the accurate file structure and architectural split.
+  - Demo shows the `price` flow, error handling (e.g., bad coin), and defensive validation.
 
 ---
 
 ## 2. Explicit Non-Goals (Out of Scope for This Iteration)
 
-These are **not required** to consider the project “done” for this iteration:
+These features are **not required** for the current iteration and are staged for the future roadmap:
 
-- No **SQLite persistence** or `--export csv|json`.
-- No extended analytics beyond what’s listed (no volatility, Sharpe, rolling metrics, correlation).
-- No REST API (no Flask / FastAPI endpoints, no health/version routes).
-- No CI/CD pipelines (no GitHub Actions required for this iteration).
-- No full-blown linting/formatting pipelines (e.g., pre-commit, mypy, black) as mandatory scope.
-- No web scraping or HTML parsing from exchanges or 3rd-party sites.
-
-Future epics may cover:
-
-- Persistence & Export (SQLite, CSV/JSON export).
-- Analytics+ (advanced risk/return metrics, rolling stats, correlation).
-- REST API (Flask, health/version endpoints).
-- CI & Lint (GitHub Actions, coverage, lint passes).
+- **Caching Layer**: No local disk caching (`~/.cache/`) is implemented in this phase. Every call hits the network.
+- **Historical Analytics**: The `history` command logic, OHLCV data fetching, CAGR, and Max Drawdown calculations are deferred.
+- **Persistence & Export**: SQLite database storage (`db.py`) and CSV/JSON export are deferred.
+- **Trending Command**: The `trending` news/coins command is stubbed but deferred.
 
 ---
 
@@ -131,123 +62,39 @@ Future epics may cover:
 Use this section as a **Go/No-Go checklist** before submission.
 
 ### Planning & Foundation
-
-- [ ] `python -m crypto_cli.main --help` works from a **clean venv**.
-- [ ] `requirements.txt` installs at least: Typer, requests, pandas, pytest.
-- [ ] `.gitignore` excludes: `venv/`, `.venv/`, `/.cache/`, `.env`, `.env.local`, `*.secrets.*`.
-- [ ] `.env.example` committed with `CRYPTO_CLI_API_KEY=YOUR_KEY_HERE`.
-- [ ] `README.md`:
-  - [ ] Describes `price` as the core command.
-  - [ ] Mentions staged `history`/analytics as near-term.
-  - [ ] Includes examples and autocompletion notes.
-- [ ] `DESIGN.md`:
-  - [ ] States "requests-only" (no CoinGecko client lib, no scraping).
-  - [ ] Describes Typer CLI surface.
-  - [ ] Explains API surface + future analytics/cache at a high level.
+- [ ] `python -m crypto_cli.main --help` works from a clean venv.
+- [ ] `requirements.txt` is accurate.
+- [ ] `.gitignore` excludes virtual environments and system files.
+- [ ] `README.md` accurately describes the `price` command and mentions `history` as planned.
+- [ ] `DESIGN.md` module map matches the actual code layout.
 
 ### CLI Scaffolding (Typer)
+- [ ] `price` options (`--coins`, `--vs`, `--mcap`, etc.) appear in `--help`.
+- [ ] Global configuration (timeouts, api_base) is correctly instantiated via `@app.callback()` and passed via `ctx.obj`.
+- [ ] Unfinished commands (`history`, `trending`) exist purely as safe stubs.
 
-- [ ] `price --coins btc,eth --vs usd,eur` appears in `--help` with explanation.
-- [ ] `history --coin btc --vs usd --start YYYY-MM-DD --end YYYY-MM-DD` appears in `--help` (at least skeleton).
-- [ ] Shell completion instructions in README tested for at least one shell.
-- [ ] `--help` for root and subcommands is readable and consistent.
+### HTTP Layer & Resilience
+- [ ] Custom `HTTPAdapter` is mounted explicitly to `"https://api.coingecko.com/"`.
+- [ ] Exponential backoff strategy is configured for `429` and `5xx` statuses.
+- [ ] Timeouts are explicitly passed to `session.get()`.
+- [ ] Defensive parsing catches `JSONDecodeError` and checks the `Content-Type` header.
+- [ ] `COINGECKO_API_KEY` is utilized correctly via headers.
 
-### HTTP Layer & API Key
+### Input Validation
+- [ ] `parse_csv_ids` validates input against lowercase alphanumeric/hyphen regex.
+- [ ] `parse_csv_vs` validates input against >=2 alphabetical characters regex.
+- [ ] Inputs are deduplicated and enforce a maximum length of 10.
+- [ ] Invalid input raises a `ValueError` which is caught and printed as a friendly CLI error.
 
-- [ ] Shared `requests.Session` configured with:
-  - [ ] Timeouts.
-  - [ ] Retry policy (429/5xx).
-  - [ ] Custom `User-Agent`.
-- [ ] Friendly, short error messages for network/API errors (no raw stack traces).
-- [ ] `CRYPTO_CLI_API_KEY` only read inside API layer.
-- [ ] Correct header name used depending on endpoint type (demo vs pro).
-- [ ] Logs and cache entries never contain the API key.
+### Data Formatting (`price` command)
+- [ ] Returns structured rows for the requested coins and currencies.
+- [ ] High-value assets (>= 1.0) format cleanly with thousands separators and 2 decimal points.
+- [ ] Low-value assets (< 1.0) format with extended precision, stripping useless trailing zeros.
 
-### Caching Layer
-
-- [ ] Cache directory: `~/.cache/crypto-cli/` (or XDG-compliant equivalent).
-- [ ] Cache entries include `fetched_at`, `status_code`, `payload`.
-- [ ] Cache key = `METHOD PATH?sorted(query_params)` (no headers, no secrets).
-- [ ] `price` cache TTL ≈ 60 seconds.
-- [ ] `history` cache TTL ≈ hours.
-- [ ] `--no-cache` flag skips cache and forces a network call.
-- [ ] Warm `price` calls are noticeably faster than cold ones.
-
-### Price Command
-
-- [ ] Uses session + cache to call `/api/v3/simple/price`.
-- [ ] Defensively parses JSON; missing keys → readable error.
-- [ ] Output normalized to rows: `{coin, vs, price[, mcap?, volume?]}`.
-- [ ] Table formatting:
-  - [ ] 2–4 decimal places.
-  - [ ] Consistent columns, aligned.
-- [ ] On invalid input (e.g., unknown coin), command exits with **non-zero** status.
-
-### History Command (Data + Analytics)
-
-- [ ] `--start`/`--end` validated:
-  - [ ] `YYYY-MM-DD` format.
-  - [ ] `start <= end`.
-- [ ] Calls `/coins/{id}/market_chart` with correct `vs_currency`, `from`, `to`.
-- [ ] Normalized DataFrame:
-  - [ ] `date` (UTC, ascending).
-  - [ ] `open`, `high`, `low`, `close`, `volume`.
-- [ ] `daily_return` computed correctly with first value = `NaN`.
-- [ ] Analytics:
-  - [ ] CAGR uses `(E/S)^(365/D) - 1` with proper guards.
-  - [ ] Max Drawdown computed using running peaks and reports peak→trough dates.
-- [ ] Summary block prints:
-  - [ ] Period.
-  - [ ] Trading-day count.
-  - [ ] CAGR (or `N/A`).
-  - [ ] Max Drawdown % with dates.
-  - [ ] Tail table of recent rows.
-- [ ] Edge cases (flat/monotonic prices) behave sensibly.
-
-### UX & Error Handling
-
-- [ ] Formatting helpers for:
-  - [ ] Thousands separators.
-  - [ ] Percentage formatting.
-  - [ ] Aligned tables.
-- [ ] Errors are:
-  - [ ] Prefixed by command (e.g., `price:` / `history:`).
-  - [ ] Short, actionable, and consistent.
-- [ ] No raw tracebacks in normal error scenarios.
-
-### Testing & Fixtures
-
-- [ ] Analytics tests:
-  - [ ] Daily returns for up/down/flat.
-  - [ ] CAGR monotonic + guard cases.
-  - [ ] Max Drawdown variants.
-- [ ] CLI tests:
-  - [ ] `price` happy path.
-  - [ ] `price` invalid coin / vs.
-  - [ ] `history` invalid date.
-  - [ ] `history` minimal happy path (fixture-based).
-- [ ] HTTP mocks:
-  - [ ] Retry/backoff logic tested via mocked 429/5xx.
-  - [ ] Cache hit vs `--no-cache` miss.
-  - [ ] Headers do not affect cache key.
-- [ ] Tests pass locally; no live network required.
-
-### Documentation & Demo
-
-- [ ] `README.md`:
-  - [ ] Features: `price` + staged `history`/analytics only (no overclaim).
-  - [ ] Usage examples correct and up to date.
-  - [ ] Autocompletion section tested.
-  - [ ] API key section clear and consistent with actual behavior.
-- [ ] `DESIGN.md`:
-  - [ ] Module map matches real files and imports.
-  - [ ] Requests-only, no web scraping mentioned.
-  - [ ] Caching and analytics properly described.
-- [ ] Demo:
-  - [ ] Shows `price` + `history` run.
-  - [ ] Demonstrates one graceful error.
-  - [ ] No secrets visible (API key hidden).
-  - [ ] Demo reproducible on fresh venv.
+### Error Handling
+- [ ] Bad inputs (e.g. unknown coin) result in clean, handled CLI outputs (no stack traces).
+- [ ] Network failures (timeout, connection error) are caught and translated into custom `RuntimeError` messages.
+- [ ] Exits with status code `1` on failure to play nicely with shell scripts.
 
 ---
 
@@ -255,16 +102,10 @@ Use this section as a **Go/No-Go checklist** before submission.
 
 The project is **in scope and done for this iteration** if:
 
-- [ ] `price` and `history` commands run and have helpful `--help`.
-- [ ] HTTP uses `requests` only, with timeouts, retries, and custom `User-Agent`.
-- [ ] API key is read from env only, never logged, never cached.
-- [ ] Cache implemented with correct keys, TTLs, and `--no-cache` bypass.
-- [ ] `history` prints normalized series + `daily_return`, CAGR, Max Drawdown (+ dates), and clear summary.
-- [ ] Minimum tests pass:
-  - [ ] Analytics unit tests.
-  - [ ] CLI smoke tests.
-  - [ ] HTTP mock tests.
-- [ ] `README.md` and `DESIGN.md` match the real implementation.
-- [ ] No web scraping is used in this iteration.
+- [ ] The `price` command executes successfully and formats data dynamically.
+- [ ] Input strings are sanitized and protected via regex before network execution.
+- [ ] HTTP uses `requests.Session` with a fully mounted `urllib3.Retry` adapter.
+- [ ] `README.md` and `DESIGN.md` match the implemented code.
+- [ ] Error messages are informative and gracefully handled.
 
-If any of the above are **not** satisfied, the feature is **out of scope** for this iteration, and the project is **not yet ready** for final submission.
+If the above are satisfied, the iteration is complete, and remaining architecture (DB, Caching, History) is successfully deferred to the next phase.
