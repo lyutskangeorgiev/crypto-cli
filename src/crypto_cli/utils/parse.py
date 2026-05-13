@@ -8,6 +8,8 @@ def parse_csv_ids(csv: str) -> list[str]:
 
     for token in formatted_csv:
         formatted_token = token.strip().lower()
+        if not formatted_token:
+            continue
         if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", formatted_token):
             raise ValueError(f"invalid id '{formatted_token!r}'. use lowercase letters, digits, and hyphens")
         result.append(formatted_token)
